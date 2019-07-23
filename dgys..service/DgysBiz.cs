@@ -78,7 +78,7 @@ namespace Dgys.Service
             // 休息3秒
             System.Threading.Thread.Sleep(3000);
             // 第二阶段
-            TransDataStage2(transDate);
+            //TransDataStage2(transDate);
             Log.Output("Data Trans end .");
         }
         #endregion
@@ -259,6 +259,7 @@ namespace Dgys.Service
                 DataTable dtTemp = null;
                 DataRow drData = null;
                 DataTable dtData = null;
+                string yptym = string.Empty;
                 // 医院编码
                 string hospitalNo = ConfigurationManager.AppSettings["hospitalNo"].ToString();
                 List<string> lstColNames = new List<string>();
@@ -284,7 +285,7 @@ namespace Dgys.Service
                                 on a.medicinetypeid_chr = b.medicinetypeid_chr
                              where a.deleted_int = 0
                                and a.ifstop_int = 0
-                               and b.medicinetypeid_chr in (1, 2, 6)";
+                               and b.medicinetypeid_chr in (2, 6)";
 
                     dtTemp = oraSvc.GetDataTable(Sql);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
@@ -301,8 +302,10 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            yptym = drData["yptym"].ToString().Replace("", "");//去掉特殊字符 （US）
                             if (drData["yptym"].ToString().StartsWith("***"))
                                 continue;
+                            drData["yptym"] = yptym;
                             drData["yybm"] = hospitalNo;
                             drData["scqy"] = "空";
                             drData["create_time"] = dtmNow;
@@ -325,25 +328,49 @@ namespace Dgys.Service
                 dtData = this.GetTableStruct(tableName);
                 try
                 {
-                    Sql = @"select distinct nvl(c.code_vchr, '') as kfbm,
-                                   b.assistcode_chr as ypbm,
-                                   nvl(b.permitno_vchr, '') as scph,
-                                   '' as scrq,
-                                   nvl(a.validperiod_dat, '') as yxrq,
-                                   sum(nvl(a.oprealgross_int, 0)) as kcsl,
-                                   nvl(a.opunit_chr, '') as kcdw
-                              from t_ds_storage_detail a
-                             inner join t_bse_medicine b
-                                on a.medicineid_chr = b.medicineid_chr
-                               and b.deleted_int = 0
-                             inner join t_bse_deptdesc c
-                                on a.drugstoreid_chr = c.deptid_chr
-                             where a.status = 1 and b.medicinetypeid_chr in (1, 2, 6)
-                             group by c.code_vchr,
-                                      b.assistcode_chr,
-                                      b.permitno_vchr,
-                                      a.validperiod_dat,
-                                      a.opunit_chr";
+                    //Sql = @"select distinct nvl(c.code_vchr, '') as kfbm,
+                    //               b.assistcode_chr as ypbm,
+                    //               nvl(b.permitno_vchr, '') as scph,
+                    //               '' as scrq,
+                    //               nvl(a.validperiod_dat, '') as yxrq,
+                    //               sum(nvl(a.oprealgross_int, 0)) as kcsl,
+                    //               nvl(a.opunit_chr, '') as kcdw
+                    //          from t_ds_storage_detail a
+                    //         inner join t_bse_medicine b
+                    //            on a.medicineid_chr = b.medicineid_chr
+                    //           and b.deleted_int = 0
+                    //         inner join t_bse_deptdesc c
+                    //            on a.drugstoreid_chr = c.deptid_chr
+                    //         where a.status = 1 and b.medicinetypeid_chr in (1, 2, 6)
+                    //         group by c.code_vchr,
+                    //                  b.assistcode_chr,
+                    //                  b.permitno_vchr,
+                    //                  a.validperiod_dat,
+                    //                  a.opunit_chr";
+                    Sql = @"select distinct b.storageid_chr as kfbm,
+                                            c.assistcode_chr as ypbm,
+                                                  case
+                                                     when b.lotno_vchr = 'UNKNOWN' then
+                                                      ''
+                                                     else
+                                                      b.lotno_vchr
+                                                   end scph ,
+                                                   nvl(b.producedate_dat, '') as scrq,
+                                                   nvl(b.validperiod_dat, '') as yxrq,
+                                                   sum(nvl(b.realgross_int, 0)) as kcsl,
+                                                   nvl(c.opunit_chr, '') as kcdw
+                                              from t_ms_storage_detail b
+                                             inner join t_bse_medicine c
+                                                on b.medicineid_chr = c.medicineid_chr
+                                             where (b.storageid_chr = '0001')
+                                               and (b.status = 1)
+                                                and c.deleted_int = 0
+                                                and c.ifstop_int = 0
+                                                and b.realgross_int > 0
+                                               and c.medicinetypeid_chr in (2,6)
+                                               group by b.storageid_chr,c.assistcode_chr,b.lotno_vchr,
+                                               b.producedate_dat,b.validperiod_dat,c.opunit_chr
+                                             order by c.assistcode_chr asc ";
 
                     dtTemp = oraSvc.GetDataTable(Sql);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
@@ -358,11 +385,18 @@ namespace Dgys.Service
                         {
                             foreach (string colName in lstColNames)
                             {
-                                if (colName == "yxrq")
+                                if (colName == "yxrq" || colName == "scrq")
                                     drData[colName] = dr[colName] == DBNull.Value ? "" : Convert.ToDateTime(dr[colName]).ToString("yyyy-MM-dd");
                                 else
                                     drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
+
+                                if (colName == "scph")
+                                    drData[colName] = dr[colName] == DBNull.Value ? "" : dr[colName].ToString();
                             }
+
+                            if (drData["ypbm"].ToString().StartsWith("*") || drData["scph"].ToString().StartsWith("*"))
+                                continue;
+
                             drData["yybm"] = hospitalNo;
                             drData["create_time"] = dtmNow;
                             dtData.LoadDataRow(drData.ItemArray, true);
@@ -373,7 +407,7 @@ namespace Dgys.Service
                 }
                 catch (Exception ex)
                 {
-                    Log.Output(ex.Message);
+                    Log.Output("mid_inventory-->" + ex.Message);
                 }
                 System.Windows.Forms.Application.DoEvents();
                 System.Threading.Thread.Sleep(1000);
@@ -384,27 +418,54 @@ namespace Dgys.Service
                 dtData = this.GetTableStruct(tableName);
                 try
                 {
-                    Sql = @"select distinct nvl(c.code_vchr, '') as kfbm,
-                                   d.assistcode_chr as ypbm,
-                                   sum(b.opamount_int) as sysl,
-                                   nvl(b.opunit_chr, '') as jldw
-                              from t_ds_outstorage a
-                             inner join t_ds_outstorage_detail b
-                                on a.seriesid_int = b.seriesid2_int
-                               and b.status = 1
-                             inner join t_bse_deptdesc c
-                                on a.drugstoreid_chr = c.deptid_chr
-                             inner join t_bse_medicine d
-                                on b.medicineid_chr = d.medicineid_chr
-                             where a.status_int > 0
-                               and (a.makeorder_dat between to_date(?, 'yyyy-mm-dd hh24:mi:ss') and
+                    //Sql = @"select distinct nvl(c.code_vchr, '') as kfbm,
+                    //               d.assistcode_chr as ypbm,
+                    //               sum(b.opamount_int) as sysl,
+                    //               nvl(b.opunit_chr, '') as jldw
+                    //          from t_ds_outstorage a
+                    //         inner join t_ds_outstorage_detail b
+                    //            on a.seriesid_int = b.seriesid2_int
+                    //           and b.status = 1
+                    //         inner join t_bse_deptdesc c
+                    //            on a.drugstoreid_chr = c.deptid_chr
+                    //         inner join t_bse_medicine d
+                    //            on b.medicineid_chr = d.medicineid_chr
+                    //         where a.status_int > 0
+                    //           and (a.makeorder_dat between to_date(?, 'yyyy-mm-dd hh24:mi:ss') and
+                    //               to_date(?, 'yyyy-mm-dd hh24:mi:ss'))
+                    //         group by c.code_vchr, d.assistcode_chr, b.opunit_chr";
+                    Sql = @"select distinct d.storageid_chr as kfbm,
+                                            c.assistcode_chr as ypbm,
+                                            sum(nvl(b.netamount_int, 0)) as sysl,
+                                            nvl(c.opunit_chr, '') as jldw,
+                                            nvl(d.askdate_dat, '') as tjzq
+                              from t_ms_outstorage_detail b
+                             inner join t_bse_medicine c
+                                on b.medicineid_chr = c.medicineid_chr
+                              left join t_ms_outstorage d
+                                on b.seriesid_int = d.seriesid_int
+                             where (d.storageid_chr = '0001')
+                               and (b.status = 1)
+                               and c.deleted_int = 0
+                               and c.ifstop_int = 0
+                               and b.netamount_int > 0
+                               and c.medicinetypeid_chr in (2, 6)
+                               and (d.askdate_dat between to_date(?, 'yyyy-mm-dd hh24:mi:ss') and
                                    to_date(?, 'yyyy-mm-dd hh24:mi:ss'))
-                             group by c.code_vchr, d.assistcode_chr, b.opunit_chr";
+                             group by d.storageid_chr,
+                                      c.assistcode_chr,
+                                      b.netamount_int,
+                                      c.opunit_chr,
+                                      d.askdate_dat
+                             order by c.assistcode_chr asc";
 
-                    IDataParameter[] parms = oraSvc.CreateParm(2, new List<object>() { transDate + " 00:00:00", transDate + " 23:59:59" });
+                    IDataParameter[] parms = oraSvc.CreateParm(2, new List<object>() { "2019-07-01" + " 00:00:00", DateTime.Now.ToString("yyyy-MM-dd") + " 23:59:59" });
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from {0}", tableName);
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -412,10 +473,13 @@ namespace Dgys.Service
                         {
                             foreach (string colName in lstColNames)
                             {
-                                drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
+                                if (colName == "tjzq" )
+                                    drData[colName] = dr[colName] == DBNull.Value ? "" : Convert.ToDateTime(dr[colName]).ToString("yyyy-MM-dd");
+                                else
+                                    drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
                             drData["yybm"] = hospitalNo;
-                            drData["tjzq"] = transDate;
+                            //drData["tjzq"] = transDate;
                             drData["create_time"] = dtmNow;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
