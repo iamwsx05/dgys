@@ -74,11 +74,11 @@ namespace Dgys.Service
         {
             Log.Output("Data Trans beginning ...");
             // 第一阶段
-            TransDataStage1(transDate);
+            //TransDataStage1(transDate);
             // 休息3秒
             System.Threading.Thread.Sleep(3000);
             // 第二阶段
-            //TransDataStage2(transDate);
+            TransDataStage2(transDate);
             Log.Output("Data Trans end .");
         }
         #endregion
@@ -473,7 +473,7 @@ namespace Dgys.Service
                         {
                             foreach (string colName in lstColNames)
                             {
-                                if (colName == "tjzq" )
+                                if (colName == "tjzq")
                                     drData[colName] = dr[colName] == DBNull.Value ? "" : Convert.ToDateTime(dr[colName]).ToString("yyyy-MM-dd");
                                 else
                                     drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
@@ -551,12 +551,14 @@ namespace Dgys.Service
                 IDataParameter[] parms = null;
                 #endregion
 
+
                 #region 住院记录信息
 
                 dtData = this.GetTableStruct("his_eng_order");
                 try
                 {
-                    Sql = @"select distinct a.registerid_chr as order_id,
+                    Sql = @"select distinct 
+                                    a.registerid_chr as order_id,
                                    b.sex_chr as sex,
                                    c.paytypename_vchr as pay_type,
                                    a.patientid_chr as patient_no,
@@ -611,6 +613,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_order where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -620,6 +625,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -635,12 +642,14 @@ namespace Dgys.Service
                 System.Threading.Thread.Sleep(1000);
                 #endregion
 
+
                 #region 住院患者费用结算表
 
                 dtData = this.GetTableStruct("his_eng_order_cost");
                 try
                 {
-                    Sql = @"select a.registerid_chr as order_id,
+                    Sql = @"select 
+                                    a.registerid_chr as order_id,
                                    d.totalsum_mny   as amount,
                                    f.typeid_chr     as typecode,
                                    f.typename_vchr  as typename
@@ -779,6 +788,9 @@ namespace Dgys.Service
                             }
                         }
 
+                        Sql = string.Format("delete from his_eng_order_cost where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtData);
@@ -786,13 +798,13 @@ namespace Dgys.Service
                         {
                             foreach (string colName in lstColNames)
                             {
-                                if (colName == "org_code")
+                                if (colName.ToLower() == "org_code")
                                 {
                                     drData[colName] = hospitalNo;
                                 }
                                 else
                                 {
-                                    switch (colName)
+                                    switch (colName.ToLower())
                                     {
                                         case "order_id":
                                             drData[colName] = item.order_id;
@@ -847,6 +859,10 @@ namespace Dgys.Service
                                     }
                                 }
                             }
+
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
+
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
                         dtData.EndLoadData();
@@ -860,6 +876,7 @@ namespace Dgys.Service
                 System.Windows.Forms.Application.DoEvents();
                 System.Threading.Thread.Sleep(1000);
                 #endregion
+
 
                 #region 住院患者感染及病理信息 -- 提供抢救次数、病理
 
@@ -896,7 +913,7 @@ namespace Dgys.Service
                             {
                                 order_id = dr["order_id"].ToString(),
                                 rescue_times = (dr["salvetimes"] == DBNull.Value || dr["salvetimes"].ToString().Trim() == "" ? 0 : ConvertToInt(dr["salvetimes"].ToString())),
-                                rescur_succ_times = (dr["salvesuccess"] == DBNull.Value || dr["salvesuccess"].ToString().Trim() == "" ? 0 : ConvertToInt(dr["salvesuccess"].ToString()))
+                                rescue_succ_times = (dr["salvesuccess"] == DBNull.Value || dr["salvesuccess"].ToString().Trim() == "" ? 0 : ConvertToInt(dr["salvesuccess"].ToString()))
                             });
                         }
                     }
@@ -988,6 +1005,9 @@ namespace Dgys.Service
                     }
                     if (lstPathogic.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_order_infection where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         List<string> lstOrderId3 = new List<string>();
@@ -998,10 +1018,12 @@ namespace Dgys.Service
                             else
                                 lstOrderId3.Add(item.order_id);
 
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             drData["order_id"] = item.order_id;
                             drData["rescue_times"] = item.rescue_times;
-                            drData["rescur_succ_times"] = item.rescur_succ_times;
+                            drData["rescue_succ_times"] = item.rescue_succ_times;
                             drData["pathologic_diag"] = item.pathologicResult == null ? string.Empty : item.pathologicResult;
                             drData["hi_code"] = string.Empty;
                             drData["hi_name"] = string.Empty;
@@ -1106,6 +1128,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_order_drug where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -1129,6 +1154,9 @@ namespace Dgys.Service
                                 else
                                     drData["continue_day"] = (Convert.ToDateTime(Convert.ToDateTime(dr["end_time"]).ToShortDateString()).Subtract(Convert.ToDateTime(Convert.ToDateTime(dr["start_time"]).ToShortDateString()))).Days + 1;
                             }
+                            drData["org_code"] = hospitalNo;
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
                         dtData.EndLoadData();
@@ -1230,6 +1258,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_order_drug_execute where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -1240,6 +1271,8 @@ namespace Dgys.Service
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
                             drData["org_code"] = hospitalNo;
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
                         dtData.EndLoadData();
@@ -1335,6 +1368,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_order_drug_send where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -1344,6 +1380,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -1421,6 +1459,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_order_fee_detail where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -1431,8 +1472,11 @@ namespace Dgys.Service
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
                             drData["org_code"] = hospitalNo;
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
+
                         dtData.EndLoadData();
                         lstCommitDt.Add(dtData);
                     }
@@ -1483,6 +1527,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_order_diagnose where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -1493,6 +1540,8 @@ namespace Dgys.Service
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
                             drData["org_code"] = hospitalNo;
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
                         dtData.EndLoadData();
@@ -1534,6 +1583,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_order_operation where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -1544,6 +1596,8 @@ namespace Dgys.Service
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
                             drData["org_code"] = hospitalNo;
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
                         dtData.EndLoadData();
@@ -1608,6 +1662,10 @@ namespace Dgys.Service
                     {
                         EntityIpLisResult vo = null;
                         List<EntityIpLisResult> lstVo = new List<EntityIpLisResult>();
+
+                        Sql = string.Format("delete from his_eng_order_exam where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -1631,6 +1689,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -1677,6 +1737,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_register where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -1690,6 +1753,8 @@ namespace Dgys.Service
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
                             drData["org_code"] = hospitalNo;
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
 
                             opRegVo = new EntityOpRegister() { visit_no = drData["visit_no"].ToString(), depart_id = drData["depart_id"].ToString(), doc_id = drData["doc_id"].ToString() };
                             if (lstReg.Any(t => t.visit_no == opRegVo.visit_no && t.depart_id == opRegVo.depart_id && t.doc_id == opRegVo.doc_id))
@@ -1880,6 +1945,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_cf where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         List<string> lstRecipeId = new List<string>();
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
@@ -1899,6 +1967,8 @@ namespace Dgys.Service
                             else
                                 continue;
 
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             if (dr["birth_dat"] != DBNull.Value)
                                 drData["age"] = BrithdayToAge(Convert.ToDateTime(dr["birth_dat"]));
@@ -2019,6 +2089,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_cf_item where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -2028,6 +2101,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -2354,6 +2429,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_cf_item_fee where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -2369,6 +2447,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -2501,6 +2581,9 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql, parms);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
+                        Sql = string.Format("delete from his_eng_cf_drug_send where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
+                        sqlSvc.ExecSql(Sql);
+
                         drData = dtData.NewRow();
                         dtData.BeginLoadData();
                         lstColNames = this.GetColumnNames(dtTemp);
@@ -2510,6 +2593,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -2570,7 +2655,7 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
-                        Sql = string.Format("delete from {0}", tableName);
+                        Sql = string.Format("delete from his_drug_catalog where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
                         sqlSvc.ExecSql(Sql);
 
                         drData = dtData.NewRow();
@@ -2584,6 +2669,8 @@ namespace Dgys.Service
                             }
                             if (drData["drug_name"].ToString().StartsWith("***"))
                                 continue;
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -2628,7 +2715,7 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
-                        Sql = string.Format("delete from {0}", tableName);
+                        Sql = string.Format("delete from his_drug_convert where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
                         sqlSvc.ExecSql(Sql);
 
                         drData = dtData.NewRow();
@@ -2642,6 +2729,8 @@ namespace Dgys.Service
                             }
                             if (drData["drug_name"].ToString().StartsWith("***"))
                                 continue;
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -2683,7 +2772,7 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
-                        Sql = string.Format("delete from {0}", tableName);
+                        Sql = string.Format("delete from his_department where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
                         sqlSvc.ExecSql(Sql);
 
                         drData = dtData.NewRow();
@@ -2695,6 +2784,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -2749,7 +2840,7 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
-                        Sql = string.Format("delete from {0}", tableName);
+                        Sql = string.Format("delete from his_doctor where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
                         sqlSvc.ExecSql(Sql);
 
                         drData = dtData.NewRow();
@@ -2761,6 +2852,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -2790,7 +2883,7 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
-                        Sql = string.Format("delete from {0}", tableName);
+                        Sql = string.Format("delete from his_admin_route where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
                         sqlSvc.ExecSql(Sql);
 
                         drData = dtData.NewRow();
@@ -2802,6 +2895,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -2831,7 +2926,7 @@ namespace Dgys.Service
                     dtTemp = oraSvc.GetDataTable(Sql);
                     if (dtTemp != null && dtTemp.Rows.Count > 0)
                     {
-                        Sql = string.Format("delete from {0}", tableName);
+                        Sql = string.Format("delete from his_admin_frequency where create_time >= {0}  and create_time<= {1}", "'" + transDate + " 00:00:00'", "'" + transDate + " 23:59:59'");
                         sqlSvc.ExecSql(Sql);
 
                         drData = dtData.NewRow();
@@ -2843,6 +2938,8 @@ namespace Dgys.Service
                             {
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
+                            drData["creator"] = "0001";
+                            drData["create_time"] = Convert.ToDateTime(transDate + " " + dtmNow.ToString("HH:mm:ss"));
                             drData["org_code"] = hospitalNo;
                             dtData.LoadDataRow(drData.ItemArray, true);
                         }
@@ -2857,6 +2954,7 @@ namespace Dgys.Service
                 System.Windows.Forms.Application.DoEvents();
                 System.Threading.Thread.Sleep(1000);
                 #endregion
+
 
                 #region 过敏药物
 
@@ -2991,7 +3089,7 @@ namespace Dgys.Service
             /// <summary>
             /// 抢救成功次数
             /// </summary>
-            public int rescur_succ_times { get; set; }
+            public int rescue_succ_times { get; set; }
         }
         #endregion
 
