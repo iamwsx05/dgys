@@ -53,6 +53,7 @@ namespace Dgys.Service
 
         private static void OnTimedEvent(object source, ElapsedEventArgs e)
         {
+
             if (ExecTimePoint.IndexOf(DateTime.Now.ToString("HH:mm:ss")) >= 0)
             {
                 try
@@ -77,11 +78,12 @@ namespace Dgys.Service
                             }
                         }
                     }
+
                     biz = null;
                 }
                 finally
                 {
-                    IsDoing = false;
+                    IsDoing = false; 
                 }
             }
         }

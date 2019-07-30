@@ -513,5 +513,107 @@ namespace Dgys.Service
             return dtRecord;
         }
         #endregion
+
+        #region 执行Sql
+
+        #region 执行SQL
+
+        /// <summary>
+        /// 执行SQL
+        /// </summary> 
+        /// <param name="sql"></param>
+        /// <returns></returns>
+        public int ExecSql(string sql)
+        {
+            return ExecSql(sql, 0, null);
+        }
+        #endregion
+
+        #region 执行SQL带参数
+
+        /// <summary>
+        /// ExecSql
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="objParm"></param>
+        /// <returns></returns>
+        public int ExecSql(string sql, IDataParameter parm)
+        {
+            return ExecSql(sql, new List<IDataParameter>() { parm });
+        }
+        /// <summary>
+        /// ExecSql
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="objParm"></param>
+        /// <returns></returns>
+        public int ExecSql(string sql, params IDataParameter[] objParm)
+        {
+            if (objParm == null)
+                return ExecSql(sql, new List<IDataParameter>());
+            else
+                return ExecSql(sql, 0, objParm);
+        }
+        /// <summary>
+        /// ExecSql
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="lstParm"></param>
+        /// <returns></returns>
+        public int ExecSql(string sql, List<IDataParameter> lstParm)
+        {
+            return ExecSql(sql, 0, ((lstParm == null || lstParm.Count == 0) ? null : lstParm.ToArray()));
+        }
+
+        /// <summary>
+        /// 执行SQL带参数
+        /// </summary> 
+        /// <param name="sql"></param>
+        /// <param name="objParams"></param>
+        /// <returns></returns>
+        int ExecSql(string sql, int step, params IDataParameter[] objParm)
+        {
+            OracleCommand cmd = GetSqlCommand();
+            int affectedRows = 0;
+
+            try
+            {
+                cmd.CommandText = GetParam(sql, step);
+                if (objParm != null && objParm.Length > 0)
+                {
+                    for (int i = 0; i < objParm.Length; i++)
+                    {
+                        if (objParm[i].Value == null)
+                        {
+                            objParm[i].Value = System.DBNull.Value;
+                        }
+                        ((OracleParameter)objParm[i]).ParameterName = (i + 1 + step * 10).ToString();
+                        cmd.Parameters.Add((OracleParameter)objParm[i]);
+                    }
+                }
+                if (cmd.Connection.State == ConnectionState.Closed)
+                {
+                    cmd.Connection.Open();
+                }
+                affectedRows = cmd.ExecuteNonQuery();
+            }
+            catch (System.Exception objEx)
+            {
+                affectedRows = -1;
+                throw objEx;
+            }
+            finally
+            {
+                if (cmd != null)
+                {
+                    cmd.Connection.Close();
+                    cmd.Dispose();
+                }
+            }
+            return affectedRows;
+        }
+        #endregion
+
+        #endregion
     }
 }
