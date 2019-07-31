@@ -75,7 +75,7 @@ namespace Dgys.Service
             Log.Output("Data Trans beginning ...");
             SynMedicineProduct();
             // 第一阶段
-            //TransDataStage1(transDate);
+            TransDataStage1(transDate);
             // 休息3秒
             System.Threading.Thread.Sleep(3000);
             // 第二阶段
