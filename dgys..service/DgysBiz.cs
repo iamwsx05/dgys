@@ -84,6 +84,21 @@ namespace Dgys.Service
         }
         #endregion
 
+        #region 生成数据 药品目录 、 药品库存信息
+        /// <summary>
+        /// 生成数据
+        /// </summary>
+        public void TransDataServiceMed(string transDate)
+        {
+            Log.Output("Data Trans beginning ...");
+            // 第一阶段 药品目录 、 药品库存信息
+            TransDataStageMed(transDate);
+            // 休息3秒
+            System.Threading.Thread.Sleep(3000);
+            Log.Output("Data Trans end .");
+        }
+        #endregion
+
         #region 计算年龄
         /// <summary>
         /// 计算年龄
@@ -270,6 +285,143 @@ namespace Dgys.Service
                 oraSvc = new OraHelper(this.DBConnOra);
                 #endregion
 
+                #region 药品每日用量
+                tableName = "mid_drugs_consumption";
+                dtData = this.GetTableStruct(tableName);
+                try
+                {
+                    //Sql = @"select distinct nvl(c.code_vchr, '') as kfbm,
+                    //               d.assistcode_chr as ypbm,
+                    //               sum(b.opamount_int) as sysl,
+                    //               nvl(b.opunit_chr, '') as jldw
+                    //          from t_ds_outstorage a
+                    //         inner join t_ds_outstorage_detail b
+                    //            on a.seriesid_int = b.seriesid2_int
+                    //           and b.status = 1
+                    //         inner join t_bse_deptdesc c
+                    //            on a.drugstoreid_chr = c.deptid_chr
+                    //         inner join t_bse_medicine d
+                    //            on b.medicineid_chr = d.medicineid_chr
+                    //         where a.status_int > 0
+                    //           and (a.makeorder_dat between to_date(?, 'yyyy-mm-dd hh24:mi:ss') and
+                    //               to_date(?, 'yyyy-mm-dd hh24:mi:ss'))
+                    //         group by c.code_vchr, d.assistcode_chr, b.opunit_chr";
+                    Sql = @"select distinct d.storageid_chr as kfbm,
+                                            c.assistcode_chr as ypbm,
+                                            sum(nvl(b.netamount_int, 0)) as sysl,
+                                            nvl(c.opunit_chr, '') as jldw,
+                                            nvl(d.askdate_dat, '') as tjzq
+                              from t_ms_outstorage_detail b
+                             inner join t_bse_medicine c
+                                on b.medicineid_chr = c.medicineid_chr
+                              left join t_ms_outstorage d
+                                on b.seriesid_int = d.seriesid_int
+                             where (d.storageid_chr = '0001')
+                               and (b.status = 1)
+                               and c.deleted_int = 0
+                               and c.ifstop_int = 0
+                               and b.netamount_int > 0
+                               and c.medicinetypeid_chr in (2)
+                               and (d.askdate_dat between to_date(?, 'yyyy-mm-dd hh24:mi:ss') and
+                                   to_date(?, 'yyyy-mm-dd hh24:mi:ss'))
+                             group by d.storageid_chr,
+                                      c.assistcode_chr,
+                                      b.netamount_int,
+                                      c.opunit_chr,
+                                      d.askdate_dat
+                             order by c.assistcode_chr asc";
+
+                    IDataParameter[] parms = oraSvc.CreateParm(2, new List<object>() { "2019-07-01" + " 00:00:00", DateTime.Now.ToString("yyyy-MM-dd") + " 23:59:59" });
+                    dtTemp = oraSvc.GetDataTable(Sql, parms);
+                    if (dtTemp != null && dtTemp.Rows.Count > 0)
+                    {
+                        Sql = string.Format("delete from {0}", tableName);
+                        sqlSvc.ExecSql(Sql);
+
+                        drData = dtData.NewRow();
+                        dtData.BeginLoadData();
+                        lstColNames = this.GetColumnNames(dtTemp);
+                        foreach (DataRow dr in dtTemp.Rows)
+                        {
+                            foreach (string colName in lstColNames)
+                            {
+                                if (colName == "tjzq")
+                                    drData[colName] = dr[colName] == DBNull.Value ? "" : Convert.ToDateTime(dr[colName]).ToString("yyyy-MM-dd");
+                                else
+                                    drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
+                            }
+                            drData["yybm"] = hospitalNo;
+                            //drData["tjzq"] = transDate;
+                            drData["create_time"] = dtmNow;
+                            dtData.LoadDataRow(drData.ItemArray, true);
+                        }
+                        dtData.EndLoadData();
+                        lstCommitDt.Add(dtData);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Output(ex.Message);
+                }
+                System.Windows.Forms.Application.DoEvents();
+                System.Threading.Thread.Sleep(1000);
+                #endregion
+
+                #region 统一提交
+
+                int succTableNums = 0;
+                int ret = sqlSvc.SqlBulkCopy(lstCommitDt, out succTableNums);
+                Log.Output(string.Format("update tables: request {0} , input {1} , sucess {2} .", 1, lstCommitDt.Count, succTableNums));
+
+                System.Windows.Forms.Application.DoEvents();
+                System.Threading.Thread.Sleep(1000);
+                #endregion
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Output(ex.Message);
+            }
+            finally
+            {
+                oraSvc = null;
+                sqlSvc = null;
+            }
+            return false;
+        }
+        #endregion
+
+        #region 第一阶段 药品目录、药品库存
+        /// <summary>
+        /// 第一阶段 药品目录、药品库存
+        /// </summary>
+        /// <param name="transDate"></param>
+        /// <returns></returns>
+        bool TransDataStageMed(string transDate)
+        {
+            SqlHelper sqlSvc = null;
+            OraHelper oraSvc = null;
+
+            try
+            {
+                #region 变量
+
+                string Sql = string.Empty;
+                string tableName = string.Empty;
+                DataTable dtTemp = null;
+                DataRow drData = null;
+                DataTable dtData = null;
+                string yptym = string.Empty;
+                // 医院编码
+                string hospitalNo = ConfigurationManager.AppSettings["hospitalNo"].ToString();
+                List<string> lstColNames = new List<string>();
+                List<DataTable> lstCommitDt = new List<DataTable>();
+                DateTime dtmNow = Convert.ToDateTime(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                sqlSvc = new SqlHelper(this.DBConnSql);
+                oraSvc = new OraHelper(this.DBConnOra);
+                #endregion
+
                 #region 药品信息
 
                 tableName = "mid_product";
@@ -414,93 +566,11 @@ namespace Dgys.Service
                 System.Threading.Thread.Sleep(1000);
                 #endregion
 
-                #region 药品每日用量
-                tableName = "mid_drugs_consumption";
-                dtData = this.GetTableStruct(tableName);
-                try
-                {
-                    //Sql = @"select distinct nvl(c.code_vchr, '') as kfbm,
-                    //               d.assistcode_chr as ypbm,
-                    //               sum(b.opamount_int) as sysl,
-                    //               nvl(b.opunit_chr, '') as jldw
-                    //          from t_ds_outstorage a
-                    //         inner join t_ds_outstorage_detail b
-                    //            on a.seriesid_int = b.seriesid2_int
-                    //           and b.status = 1
-                    //         inner join t_bse_deptdesc c
-                    //            on a.drugstoreid_chr = c.deptid_chr
-                    //         inner join t_bse_medicine d
-                    //            on b.medicineid_chr = d.medicineid_chr
-                    //         where a.status_int > 0
-                    //           and (a.makeorder_dat between to_date(?, 'yyyy-mm-dd hh24:mi:ss') and
-                    //               to_date(?, 'yyyy-mm-dd hh24:mi:ss'))
-                    //         group by c.code_vchr, d.assistcode_chr, b.opunit_chr";
-                    Sql = @"select distinct d.storageid_chr as kfbm,
-                                            c.assistcode_chr as ypbm,
-                                            sum(nvl(b.netamount_int, 0)) as sysl,
-                                            nvl(c.opunit_chr, '') as jldw,
-                                            nvl(d.askdate_dat, '') as tjzq
-                              from t_ms_outstorage_detail b
-                             inner join t_bse_medicine c
-                                on b.medicineid_chr = c.medicineid_chr
-                              left join t_ms_outstorage d
-                                on b.seriesid_int = d.seriesid_int
-                             where (d.storageid_chr = '0001')
-                               and (b.status = 1)
-                               and c.deleted_int = 0
-                               and c.ifstop_int = 0
-                               and b.netamount_int > 0
-                               and c.medicinetypeid_chr in (2)
-                               and (d.askdate_dat between to_date(?, 'yyyy-mm-dd hh24:mi:ss') and
-                                   to_date(?, 'yyyy-mm-dd hh24:mi:ss'))
-                             group by d.storageid_chr,
-                                      c.assistcode_chr,
-                                      b.netamount_int,
-                                      c.opunit_chr,
-                                      d.askdate_dat
-                             order by c.assistcode_chr asc";
-
-                    IDataParameter[] parms = oraSvc.CreateParm(2, new List<object>() { "2019-07-01" + " 00:00:00", DateTime.Now.ToString("yyyy-MM-dd") + " 23:59:59" });
-                    dtTemp = oraSvc.GetDataTable(Sql, parms);
-                    if (dtTemp != null && dtTemp.Rows.Count > 0)
-                    {
-                        Sql = string.Format("delete from {0}", tableName);
-                        sqlSvc.ExecSql(Sql);
-
-                        drData = dtData.NewRow();
-                        dtData.BeginLoadData();
-                        lstColNames = this.GetColumnNames(dtTemp);
-                        foreach (DataRow dr in dtTemp.Rows)
-                        {
-                            foreach (string colName in lstColNames)
-                            {
-                                if (colName == "tjzq")
-                                    drData[colName] = dr[colName] == DBNull.Value ? "" : Convert.ToDateTime(dr[colName]).ToString("yyyy-MM-dd");
-                                else
-                                    drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
-                            }
-                            drData["yybm"] = hospitalNo;
-                            //drData["tjzq"] = transDate;
-                            drData["create_time"] = dtmNow;
-                            dtData.LoadDataRow(drData.ItemArray, true);
-                        }
-                        dtData.EndLoadData();
-                        lstCommitDt.Add(dtData);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Output(ex.Message);
-                }
-                System.Windows.Forms.Application.DoEvents();
-                System.Threading.Thread.Sleep(1000);
-                #endregion
-
                 #region 统一提交
 
                 int succTableNums = 0;
                 int ret = sqlSvc.SqlBulkCopy(lstCommitDt, out succTableNums);
-                Log.Output(string.Format("update tables: request {0} , input {1} , sucess {2} .", 3, lstCommitDt.Count, succTableNums));
+                Log.Output(string.Format("update tables: request {0} , input {1} , sucess {2} .", 2, lstCommitDt.Count, succTableNums));
 
                 System.Windows.Forms.Application.DoEvents();
                 System.Threading.Thread.Sleep(1000);
