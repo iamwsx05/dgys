@@ -1,0 +1,2 @@
+hisTableName,				scpTableName,				keyTableName,		keyId,			searchKeyColumx
+HIS_ENG_ORDER_DRUG,			HIS_ENG_ORDER_DRUG,			HIS_ENG_ORDER,		order_id,		OUT_DATE

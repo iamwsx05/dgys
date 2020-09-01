@@ -428,7 +428,7 @@ namespace Dgys.Service
                 dtData = this.GetTableStruct(tableName);
                 try
                 {
-                    Sql = @"select a.assistcode_chr as ypbm,
+                    Sql = @"select a.assistcode_chr as ypbm,a.medicinename_vchr,
                                    nvl(a.mednormalname_vchr, '') as yptym,
                                    nvl(a.medspec_vchr, '') as bzgg,
                                    --nvl(a.productorid_chr, '') as scqy,
@@ -453,11 +453,15 @@ namespace Dgys.Service
                         {
                             foreach (string colName in lstColNames)
                             {
+                                if (colName == "medicinename_vchr")
+                                    continue;
                                 drData[colName] = ConvertToValue(dtTemp, colName, dr[colName]);
                             }
                             yptym = drData["yptym"].ToString().Replace("", "");//去掉特殊字符 （US）
                             if (drData["yptym"].ToString().StartsWith("***"))
                                 continue;
+                            if (string.IsNullOrEmpty(yptym))
+                                yptym = dr["medicinename_vchr"].ToString();
                             drData["yptym"] = yptym;
                             drData["yybm"] = hospitalNo;
                             drData["scqy"] = "空";
@@ -2889,7 +2893,7 @@ namespace Dgys.Service
                 try
                 {
                     Sql = @"select a.shortno_chr as dept_id,
-                                   a.deptname_vchr as dept_name,1
+                                   a.deptname_vchr as dept_name,
                                    a.deptname_vchr as dept_abbr,
                                    (case a.inpatientoroutpatient_int
                                      when 0 then

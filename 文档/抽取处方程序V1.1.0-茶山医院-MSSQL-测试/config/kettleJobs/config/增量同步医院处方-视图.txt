@@ -1,0 +1,15 @@
+hisTableName,				scpTableName,				keyTableName,		keyId,			searchKeyColum
+HIS_ENG_ORDER,				HIS_ENG_ORDER,				HIS_ENG_ORDER,		order_id,		OUT_DATE
+HIS_ENG_ORDER_COST,			HIS_ENG_ORDER_COST,			HIS_ENG_ORDER,		order_id,		OUT_DATE
+HIS_ENG_ORDER_INFECTION,	HIS_ENG_ORDER_INFECTION,	HIS_ENG_ORDER,		order_id,		OUT_DATE
+HIS_ENG_ORDER_DRUG_EXECUTE,	HIS_ENG_ORDER_DRUG_EXECUTE,	HIS_ENG_ORDER,		order_id,		OUT_DATE
+HIS_ENG_ORDER_DRUG_SEND,	HIS_ENG_ORDER_DRUG_SEND,	HIS_ENG_ORDER,		order_id,		OUT_DATE
+HIS_ENG_ORDER_FEE_DETAIL,	HIS_ENG_ORDER_FEE_DETAIL,	HIS_ENG_ORDER,		order_id,		OUT_DATE
+HIS_ENG_ORDER_DIAGNOSE,		HIS_ENG_ORDER_DIAGNOSE,		HIS_ENG_ORDER,		order_id,		OUT_DATE
+HIS_ENG_ORDER_OPERATION,	HIS_ENG_ORDER_OPERATION,	HIS_ENG_ORDER,		order_id,		OUT_DATE
+HIS_ENG_ORDER_EXAM,			HIS_ENG_ORDER_EXAM,			HIS_ENG_ORDER,		order_id,		OUT_DATE
+his_register,				his_register,				his_register,		visit_no,		reg_date
+his_eng_cf,					his_eng_cf,					his_eng_cf,			cfid,			pres_date_time
+his_eng_cf_item,			his_eng_cf_item,			his_eng_cf,			cfid,			pres_date_time
+his_eng_cf_item_fee,		his_eng_cf_item_fee,		his_eng_cf,			cfid,			pres_date_time
+his_eng_cf_drug_send,		his_eng_cf_drug_send,		his_eng_cf,			cfid,			pres_date_time

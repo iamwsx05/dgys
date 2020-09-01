@@ -1,0 +1,39 @@
+
+-- sql server
+select top 1 'HIS_ENG_ORDER' "表名", 					'BIRTHDAY' "字段" 		 ,BIRTHDAY + '|' from  HIS_ENG_ORDER union
+select top 1 'HIS_ENG_ORDER' "表名", 					'IN_DATE ' "字段" 		 ,IN_DATE  + '|' from  HIS_ENG_ORDER union
+select top 1 'HIS_ENG_ORDER' "表名", 					'OUT_DATE ' "字段" 		 ,OUT_DATE  + '|' from  HIS_ENG_ORDER union
+select top 1 	'his_eng_order_drug' "表名", 			'start_time ' "字段" 	 ,start_time  + '|' from  his_eng_order_drug union
+select top 1 		'his_eng_order_drug' "表名", 		'pres_date_time ' "字段" ,pres_date_time  + '|' from  his_eng_order_drug union
+select top 1 'his_eng_order_drug' "表名", 				'end_time ' "字段" 		 ,end_time  + '|' from  his_eng_order_drug union
+select top 1 		'his_eng_order_drug_send' "表名", 	'send_date_time ' "字段" ,send_date_time  + '|' from  his_eng_order_drug_send union
+select top 1 'HIS_ENG_ORDER_DIAGNOSE' "表名", 			'DIAG_DATE ' "字段" 	 ,DIAG_DATE  + '|' from  HIS_ENG_ORDER_DIAGNOSE union
+select top 1 	'his_eng_order_operation' "表名", 		'start_time ' "字段" 	 ,start_time  + '|' from  his_eng_order_operation union
+select top 1 'his_eng_order_operation' "表名", 			'end_time ' "字段" 		 ,end_time  + '|' from  his_eng_order_operation union
+select top 1 'his_eng_order_exam' "表名", 				'send_time ' "字段" 	 ,send_time  + '|' from  his_eng_order_exam union
+select top 1 'his_eng_order_exam' "表名", 				'lis_time ' "字段" 		 ,lis_time  + '|' from  his_eng_order_exam union
+select top 1 'his_register' "表名", 						'reg_date ' "字段" 	,  reg_date  + '|' from  his_register union
+select top 1 		'his_eng_cf' "表名", 				'pres_date_time ' "字段" ,pres_date_time  + '|' from  his_eng_cf union
+select top 1 		'his_eng_cf_drug_send' "表名", 		'send_date_time ' "字段" ,send_date_time  + '|' from  his_eng_cf_drug_send union
+select top 1 		'HIS_DRUG_CATALOG' "表名", 		'USE_FLAG ' "字段" ,USE_FLAG  + '|' from  HIS_DRUG_CATALOG
+
+
+-- oracle
+select 'HIS_ENG_ORDER' "表名", 					'BIRTHDAY' "字段" 		 ,BIRTHDAY || '|' from  HIS_ENG_ORDER where rownum < 2  union
+select 'HIS_ENG_ORDER' "表名", 					'IN_DATE ' "字段" 		 ,IN_DATE  || '|' from  HIS_ENG_ORDER where rownum < 2  union
+select 'HIS_ENG_ORDER' "表名", 					'OUT_DATE ' "字段" 		 ,OUT_DATE  || '|' from  HIS_ENG_ORDER where rownum < 2  union
+select 'his_eng_order_drug' "表名", 			'start_time ' "字段" 	 ,start_time  || '|' from  his_eng_order_drug where rownum < 2  union
+select 'his_eng_order_drug' "表名", 		'pres_date_time ' "字段" ,pres_date_time  || '|' from  his_eng_order_drug where rownum < 2  union
+select 'his_eng_order_drug' "表名", 				'end_time ' "字段" 		 ,end_time  || '|' from  his_eng_order_drug where rownum < 2  union
+select 'his_eng_order_drug_send' "表名", 	'send_date_time ' "字段" ,send_date_time  || '|' from  his_eng_order_drug_send where rownum < 2  union
+select 'HIS_ENG_ORDER_DIAGNOSE' "表名", 			'DIAG_DATE ' "字段" 	 ,DIAG_DATE  || '|' from  HIS_ENG_ORDER_DIAGNOSE where rownum < 2  union
+select 'his_eng_order_operation' "表名", 		'start_time ' "字段" 	 ,start_time  || '|' from  his_eng_order_operation where rownum < 2  union
+select 'his_eng_order_operation' "表名", 			'end_time ' "字段" 		 ,end_time  || '|' from  his_eng_order_operation where rownum < 2  union
+select 'his_eng_order_exam' "表名", 				'send_time ' "字段" 	 ,send_time  || '|' from  his_eng_order_exam where rownum < 2  union
+select 'his_eng_order_exam' "表名", 				'lis_time ' "字段" 		 ,lis_time  || '|' from  his_eng_order_exam where rownum < 2  union
+select 'his_register' "表名", 						'reg_date ' "字段" 	,  reg_date  || '|' from  his_register where rownum < 2  union
+select 'his_eng_cf' "表名", 				'pres_date_time ' "字段" ,pres_date_time  || '|' from  his_eng_cf where rownum < 2  union
+select 'his_eng_cf_drug_send' "表名", 		'send_date_time ' "字段" ,send_date_time  || '|' from  his_eng_cf_drug_send where rownum < 2 union
+select 'HIS_DRUG_CATALOG' "表名", 		'USE_FLAG ' "字段" ,USE_FLAG  from  HIS_DRUG_CATALOG where rownum < 2;
+
+

@@ -1,0 +1,32 @@
+
+-- 名称查看参考SQL
+
+SELECT DISTINCT org_code,'his_eng_order' 表名,' sex' 字段, '("男","女")' 名称,sex from his_eng_order WHERE sex not in ('男','女') union all
+SELECT DISTINCT org_code,'his_eng_order' 表名,' pregnancy' 字段, '("是","否")' 名称,pregnancy from his_eng_order WHERE pregnancy not in ('是','否') union all
+SELECT DISTINCT org_code,'his_eng_order' 表名,' breast_feeding' 字段, '("是","否")' 名称,breast_feeding from his_eng_order WHERE breast_feeding not in ('是','否') union all
+SELECT DISTINCT org_code,'his_eng_order' 表名,' marital' 字段, '("已婚","未婚")' 名称,marital from his_eng_order WHERE marital not in ('已婚','未婚') union all
+SELECT DISTINCT org_code,'his_eng_order_drug' 表名,' type' 字段, '("长期","临时","出院带药")' 名称,type from his_eng_order_drug WHERE type not in ('长期','临时','出院带药') union all
+SELECT DISTINCT org_code,'his_eng_order_drug_execute' 表名,' type' 字段, '("长期","临时","出院带药")' 名称,type from his_eng_order_drug_execute WHERE type not in ('长期','临时','出院带药') union all
+SELECT DISTINCT org_code,'his_eng_order_fee_detail' 表名,' pay_flag' 字段, '("1-正常","2-退费")' 名称,pay_flag from his_eng_order_fee_detail WHERE pay_flag not in ('1','2','正常','退费') union all
+SELECT DISTINCT org_code,'his_eng_order_operation' 表名,' incision_status' 字段, '("Y","N")' 名称,incision_status from his_eng_order_operation WHERE incision_status not in ('Y','N') union all
+SELECT DISTINCT org_code,'his_eng_order_operation' 表名,' inplant' 字段, '("是","否")' 名称,inplant from his_eng_order_operation WHERE inplant not in ('是','否') union all
+SELECT DISTINCT org_code,'his_eng_cf' 表名,' sex' 字段, '("男","女")' 名称,sex from his_eng_cf WHERE sex not in ('男','女') union all
+SELECT DISTINCT org_code,'his_eng_cf' 表名,' pay_type' 字段, '("自费","市级医保")' 名称,pay_type from his_eng_cf WHERE pay_type not in ('自费','市级医保') union all
+SELECT DISTINCT org_code,'his_eng_cf' 表名,' pregnancy' 字段, '("是","否")' 名称,pregnancy from his_eng_cf WHERE pregnancy not in ('是','否') union all
+SELECT DISTINCT org_code,'his_eng_cf' 表名,' breast_feeding' 字段, '("是","否")' 名称,breast_feeding from his_eng_cf WHERE breast_feeding not in ('是','否') union all
+SELECT DISTINCT org_code,'his_eng_cf' 表名,' pres_source' 字段, '("门诊","急诊")' 名称,pres_source from his_eng_cf WHERE pres_source not in ('门诊','急诊') union all
+SELECT DISTINCT org_code,'his_eng_cf' 表名,' recipe_type' 字段, '("中药处方","西药处方")' 名称,recipe_type from his_eng_cf WHERE recipe_type not in ('中药处方','西药处方') union all
+SELECT DISTINCT org_code,'his_eng_cf_item' 表名,' first_use' 字段, '("是","否")' 名称,first_use from his_eng_cf_item WHERE first_use not in ('是','否')  union all
+SELECT DISTINCT org_code,'his_eng_cf_item_fee' 表名,' refund_flag' 字段, '("1-收费","2-退费")' 名称,refund_flag from his_eng_cf_item_fee WHERE refund_flag not in ('1','2','收费','退费') union all
+SELECT DISTINCT org_code,'his_drug_catalog' 表名,' drug_type' 字段, '("西药","中成药","中草药","中药饮片")' 名称,  	drug_type from his_drug_catalog WHERE drug_type not in ('西药','中成药','中草药','中药饮片') union all
+SELECT DISTINCT org_code,'his_drug_catalog' 表名,' use_flag' 字段, '("是","否")' 名称,use_flag from his_drug_catalog WHERE use_flag not in ('是','否') union all
+SELECT DISTINCT org_code,'his_department' 表名,' dept_type' 字段, '("门诊","急诊","住院")' 名称,dept_type from his_department WHERE dept_type not in ('门诊','急诊','住院') union all
+SELECT DISTINCT org_code,'his_doctor' 表名,' work_scope' 字段, '("门诊","急诊","住院")' 名称,work_scope from his_doctor WHERE work_scope not in ('门诊','急诊','住院') 
+;
+
+SELECT DISTINCT org_code,'his_eng_order_drug' 表名,' manufacturer_name' 字段,  'manufacturer_name is null' from his_eng_order_drug WHERE manufacturer_name is null or rtrim(lTRIM(manufacturer_name))='' union all
+SELECT DISTINCT org_code,'his_eng_cf' 表名,' diagnose' 字段,  'diagnose is null' from his_eng_cf WHERE diagnose is null or rtrim(lTRIM(DIAGNOSE))='' union all
+SELECT DISTINCT org_code,'his_eng_cf' 表名,' address-phone_no' 字段, '地址和联系电话都为空' from his_eng_cf WHERE (address is null or rtrim(lTRIM(address))='') and (phone_no is null or rtrim(lTRIM(phone_no))='') union all
+SELECT DISTINCT org_code,'his_eng_order' 表名,' address-phone_no' 字段, '地址和联系电话都为空' from his_eng_order WHERE (address is null or rtrim(lTRIM(address))='') and (phone_no is null or rtrim(lTRIM(phone_no))='') union all
+SELECT DISTINCT org_code,'his_eng_cf_item' 表名,' manufacturer_name' 字段,  'manufacturer_name is null' from his_eng_cf_item WHERE manufacturer_name is null or rtrim(lTRIM(manufacturer_name))=''
+;
